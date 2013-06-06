@@ -49,23 +49,24 @@ log_dir = node['jenkins']['server']['log_dir']
   end
 end
 
-ruby_block "block_until_operational" do
-  block do
-    Chef::Log.info "Waiting until Jenkins is listening on port #{node['jenkins']['server']['port']}"
-    until JenkinsHelper.service_listening?(node['jenkins']['server']['port']) do
-      sleep 1
-      Chef::Log.debug(".")
-    end
-
-    Chef::Log.info "Waiting until the Jenkins API is responding"
-    test_url = URI.parse("#{node['jenkins']['server']['url']}/api/json")
-    until JenkinsHelper.endpoint_responding?(test_url) do
-      sleep 1
-      Chef::Log.debug(".")
-    end
-  end
-  action :nothing
-end
+#jenkins can use Auth...
+#ruby_block "block_until_operational" do
+#  block do
+#    Chef::Log.info "Waiting until Jenkins is listening on port #{node['jenkins']['server']['port']}"
+#    until JenkinsHelper.service_listening?(node['jenkins']['server']['port']) do
+#      sleep 1
+#      Chef::Log.debug(".")
+#    end
+#
+#    Chef::Log.info "Waiting until the Jenkins API is responding"
+#    test_url = URI.parse("#{node['jenkins']['server']['url']}/api/json")
+#    until JenkinsHelper.endpoint_responding?(test_url) do
+#      sleep 1
+#      Chef::Log.debug(".")
+#    end
+#  end
+#  action :nothing
+#end
 
 node['jenkins']['server']['plugins'].each do |name|
   remote_file File.join(plugins_dir, "#{name}.hpi") do
@@ -104,5 +105,5 @@ end
 
 runit_service "jenkins" do
   action [:enable, :start]
-  notifies :create, "ruby_block[block_until_operational]", :immediately
+  #notifies :create, "ruby_block[block_until_operational]", :immediately
 end

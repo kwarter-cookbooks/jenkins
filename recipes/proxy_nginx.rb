@@ -19,7 +19,8 @@
 # limitations under the License.
 #
 
-include_recipe "nginx::source"
+#let me decide how to install nginx, use role to compose
+#include_recipe "nginx::source"
 
 if node['jenkins']['http_proxy']['www_redirect'] == "enable"
   www_redirect = true
@@ -29,21 +30,41 @@ end
 
 host_name = node['jenkins']['http_proxy']['host_name'] || node['fqdn']
 
+if node['jenkins']['http_proxy']['ssl']
+  proxy = data_bag_item('jenkins', 'proxy')
+
+  directory File.join(node['nginx']['dir'], 'ssl') do
+    owner 'root'
+    group 'root'
+    mode '0755'
+  end
+
+  %w(key cert).each do |item|
+    file File.join(node['nginx']['dir'], 'ssl', "jenkins.#{item}") do
+      content proxy['ssl'][item]
+      mode 0644
+    end
+  end
+
+end
+
 template "#{node['nginx']['dir']}/sites-available/jenkins.conf" do
-  source      "nginx_jenkins.conf.erb"
-  owner       'root'
-  group       'root'
-  mode        '0644'
+  source "nginx_jenkins.conf.erb"
+  owner 'root'
+  group 'root'
+  mode '0644'
   variables(
-    :host_name        => host_name,
-    :host_aliases     => node['jenkins']['http_proxy']['host_aliases'],
-    :listen_ports     => node['jenkins']['http_proxy']['listen_ports'],
-    :www_redirect     => www_redirect,
-    :max_upload_size  => node['jenkins']['http_proxy']['client_max_body_size']
+      :host_name       => host_name,
+      :host_aliases    => node['jenkins']['http_proxy']['host_aliases'],
+      :listen_ports    => node['jenkins']['http_proxy']['listen_ports'],
+      :www_redirect    => www_redirect,
+      :max_upload_size => node['jenkins']['http_proxy']['client_max_body_size'],
+      :ssl_key         => File.join(node['nginx']['dir'], 'ssl', 'jenkins.key'),
+      :ssl_cert        => File.join(node['nginx']['dir'], 'ssl', 'jenkins.cert')
   )
 
   if File.exists?("#{node['nginx']['dir']}/sites-enabled/jenkins.conf")
-    notifies  :restart, 'service[nginx]'
+    notifies :restart, 'service[nginx]'
   end
 end
 
