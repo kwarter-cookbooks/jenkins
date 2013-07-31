@@ -57,7 +57,7 @@ server {
 
     proxy_pass http://127.0.0.1:<%= node[:jenkins][:server][:port] %>;
 <% if node[:jenkins][:http_proxy][:ssl] %>
-    proxy_redirect http://<%= @host_name %> https://<%= @host_name %>;
+    proxy_redirect http://<%= @host_name %> /;
 <% end %>
   }
 }
